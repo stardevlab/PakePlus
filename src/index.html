@@ -1,22 +1,1756 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingBox UI - Vue重构版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* 暗色主题变量 */
+            --primary: #712bc0;
+            --primary-light: #8a4cd0;
+            --primary-dark: #5a219f;
+            --secondary: #4c1d95;
+            --accent: #a855f7;
+            --dark-bg: #121826;
+            --card-bg: #1e293b;
+            --card-hover: #2a3a52;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+            --sidebar-width: 260px;
+            --header-height: 80px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
 
-    <body>
-        <main class="container">
-            <h1>Welcome to PakePlus</h1>
+        /* 亮色主题变量 */
+        [data-theme="light"] {
+            --dark-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --card-hover: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
 
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit">Greet</button>
-            </form>
-            <p id="greet-msg"></p>
-        </main>
-    </body>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: var(--transition);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 24px 0;
+            border-right: 1px solid rgba(148, 163, 184, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        [data-theme="light"] .sidebar {
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            margin-bottom: 24px;
+        }
+
+        [data-theme="light"] .logo {
+            border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            margin: 4px 12px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(113, 43, 192, 0.1);
+            color: var(--primary-light);
+        }
+
+        [data-theme="light"] .nav-item:hover, 
+        [data-theme="light"] .nav-item.active {
+            background: rgba(113, 43, 192, 0.08);
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            width: 28px;
+            margin-right: 12px;
+        }
+
+        .nav-label {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .connection-status {
+            background: rgba(30, 41, 59, 0.9);
+            margin: 24px 16px 0;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            text-align: center;
+        }
+
+        [data-theme="light"] .connection-status {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+            margin-right: 8px;
+        }
+
+        .status-indicator.connected {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .mode-select {
+            width: 100%;
+            background: rgba(113, 43, 192, 0.2);
+            border: 1px solid rgba(113, 43, 192, 0.5);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            margin: 12px 0;
+        }
+
+        [data-theme="light"] .mode-select {
+            background: rgba(113, 43, 192, 0.1);
+        }
+
+        .toggle-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(113, 43, 192, 0.4);
+        }
+
+        .toggle-btn.connected {
+            background: var(--dark-bg);
+            border: 1px solid var(--success);
+        }
+
+        [data-theme="light"] .toggle-btn.connected {
+            background: white;
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            height: var(--header-height);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--card-hover);
+        }
+
+        .theme-icon {
+            font-size: 20px;
+        }
+
+        .theme-text {
+            font-weight: 500;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 8px 16px;
+            width: 300px;
+            border: 1px solid rgba(113, 43, 192, 0.2);
+        }
+
+        [data-theme="light"] .search-box {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px;
+            width: 100%;
+            outline: none;
+        }
+
+        /* 仪表盘样式 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(113, 43, 192, 0.2);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        [data-theme="light"] .stat-card {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary);
+        }
+
+        .stat-title {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-value span {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--success);
+            gap: 4px;
+        }
+
+        .stat-trend.down {
+            color: var(--danger);
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: var(--shadow);
+        }
+
+        [data-theme="light"] .chart-container {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .chart-btn {
+            background: rgba(148, 163, 184, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        [data-theme="light"] .chart-btn {
+            background: rgba(203, 213, 225, 0.3);
+        }
+
+        .chart-btn:hover, .chart-btn.active {
+            background: rgba(113, 43, 192, 0.2);
+            color: var(--primary-light);
+        }
+
+        .chart-wrapper {
+            height: 300px;
+            position: relative;
+        }
+
+        /* 规则管理样式 */
+        .rules-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: var(--shadow);
+        }
+
+        [data-theme="light"] .rules-container {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .rules-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .rules-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rules-table th {
+            text-align: left;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        [data-theme="light"] .rules-table th {
+            border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .rules-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 14px;
+        }
+
+        [data-theme="light"] .rules-table td {
+            border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+        }
+
+        .rule-type {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .rule-action {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-direct {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .action-proxy {
+            background: rgba(113, 43, 192, 0.2);
+            color: #8a4cd0;
+        }
+
+        .action-block {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .add-rule-btn {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .add-rule-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* 规则表单 */
+        .rule-form {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-top: 20px;
+            border: 1px solid rgba(113, 43, 192, 0.2);
+        }
+
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .form-control {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(113, 43, 192, 0.1);
+        }
+
+        /* 系统设置样式 */
+        .settings-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: var(--shadow);
+        }
+
+        [data-theme="light"] .settings-container {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        [data-theme="light"] .setting-item {
+            border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+        }
+
+        .setting-label {
+            flex: 1;
+        }
+
+        .setting-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .setting-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .setting-control {
+            display: flex;
+            gap: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(148, 163, 184, 0.3);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .file-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .file-input input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .file-input input {
+            border: 1px solid rgba(203, 213, 225, 0.5);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .download-progress {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 配置管理 */
+        .config-manager {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: var(--shadow);
+        }
+        
+        .config-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .config-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: var(--border-radius);
+            padding: 12px;
+        }
+        
+        .config-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(148, 163, 184, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .config-item.active {
+            border-left: 4px solid var(--primary);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding: 16px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .logo {
+                padding: 0;
+                border: none;
+                margin: 0;
+                width: auto;
+            }
+            
+            .nav-items {
+                display: flex;
+                width: 100%;
+                margin-top: 16px;
+                justify-content: space-between;
+            }
+            
+            .nav-item {
+                margin: 0;
+                padding: 10px 15px;
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .nav-label {
+                display: none;
+            }
+            
+            .connection-status {
+                display: none;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .search-box {
+                width: 200px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                height: auto;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 16px;
+            }
+            
+            .chart-actions {
+                display: none;
+            }
+            
+            .rules-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .setting-control {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- 侧边导航栏 -->
+            <div class="sidebar">
+                <div class="logo">
+                    <i class="fas fa-bolt logo-icon"></i>
+                    <div class="logo-text">SingBox UI</div>
+                </div>
+                
+                <div class="nav-items">
+                    <div class="nav-item active" :class="{ active: activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-label">仪表盘</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: activeTab === 'proxies' }" @click="activeTab = 'proxies'">
+                        <i class="fas fa-server"></i>
+                        <span class="nav-label">代理节点</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: activeTab === 'rules' }" @click="activeTab = 'rules'">
+                        <i class="fas fa-globe-americas"></i>
+                        <span class="nav-label">规则管理</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: activeTab === 'connections' }" @click="activeTab = 'connections'">
+                        <i class="fas fa-plug"></i>
+                        <span class="nav-label">连接管理</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-label">系统设置</span>
+                    </div>
+                </div>
+                
+                <div class="connection-status">
+                    <div>
+                        <span class="status-indicator" :class="{ connected: isConnected }"></span>
+                        <span>{{ isConnected ? '已连接' : '未连接' }} - {{ modeText }}</span>
+                    </div>
+                    <select class="mode-select" v-model="currentMode">
+                        <option value="global">全局模式</option>
+                        <option value="rule">规则模式</option>
+                        <option value="direct">直连模式</option>
+                    </select>
+                    <button class="toggle-btn" :class="{ connected: isConnected }" @click="toggleConnection">
+                        <i class="fas fa-plug"></i>
+                        {{ isConnected ? '断开连接' : '连接代理' }}
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <div class="header">
+                    <h1 class="page-title">{{ getTabTitle(activeTab) }}</h1>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" :placeholder="getSearchPlaceholder(activeTab)">
+                    </div>
+                    <div class="theme-toggle" @click="toggleTheme">
+                        <i class="fas" :class="themeIcon"></i>
+                        <span class="theme-text">{{ themeText }}</span>
+                    </div>
+                </div>
+                
+                <!-- 仪表盘内容 -->
+                <div class="content-section" :class="{ active: activeTab === 'dashboard' }" id="dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-title">
+                                <i class="fas fa-cloud-download-alt"></i>
+                                <span>下载流量</span>
+                            </div>
+                            <div class="stat-value">{{ stats.download.toFixed(1) }} <span>GB</span></div>
+                            <div class="stat-trend">
+                                <i class="fas fa-arrow-up"></i> <span>{{ downloadTrend }}%</span> 本月
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-title">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>上传流量</span>
+                            </div>
+                            <div class="stat-value">{{ stats.upload.toFixed(1) }} <span>GB</span></div>
+                            <div class="stat-trend">
+                                <i class="fas fa-arrow-up"></i> <span>{{ uploadTrend }}%</span> 本月
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-title">
+                                <i class="fas fa-bolt"></i>
+                                <span>当前带宽</span>
+                            </div>
+                            <div class="stat-value">{{ stats.bandwidth.toFixed(1) }} <span>Mbps</span></div>
+                            <div class="stat-trend">
+                                <i class="fas fa-check-circle"></i> <span>稳定</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-title">
+                                <i class="fas fa-clock"></i>
+                                <span>连接时间</span>
+                            </div>
+                            <div class="stat-value">{{ uptime }}</div>
+                            <div class="stat-trend">
+                                <i class="fas fa-server"></i> <span>运行中</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h2 class="chart-title">流量使用情况</h2>
+                            <div class="chart-actions">
+                                <button class="chart-btn active">24小时</button>
+                                <button class="chart-btn">7天</button>
+                                <button class="chart-btn">30天</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas ref="trafficChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h2 class="chart-title">实时带宽监控</h2>
+                            <div class="chart-actions">
+                                <button class="chart-btn" @click="resetBandwidthChart"><i class="fas fa-sync-alt"></i> 重置</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas ref="bandwidthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 规则管理页面 -->
+                <div class="content-section" :class="{ active: activeTab === 'rules' }" id="rules">
+                    <div class="rules-container">
+                        <div class="rules-header">
+                            <h2>规则管理</h2>
+                            <button class="add-rule-btn" @click="showRuleForm">
+                                <i class="fas fa-plus"></i> 添加规则
+                            </button>
+                        </div>
+                        
+                        <table class="rules-table">
+                            <thead>
+                                <tr>
+                                    <th>规则名称</th>
+                                    <th>类型</th>
+                                    <th>条件</th>
+                                    <th>策略</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(rule, index) in rules" :key="index">
+                                    <td>{{ rule.name }}</td>
+                                    <td><span class="rule-type">{{ rule.type }}</span></td>
+                                    <td>{{ rule.condition }}</td>
+                                    <td><span class="rule-action" :class="getActionClass(rule.action)">{{ getActionText(rule.action) }}</span></td>
+                                    <td>
+                                        <button class="action-btn edit-rule" @click="editRule(rule)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn delete-rule" @click="deleteRule(index)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- 添加/编辑规则表单 -->
+                        <div class="rule-form" v-if="showForm">
+                            <div class="form-header">
+                                <h3>{{ editingRule ? '编辑规则' : '添加新规则' }}</h3>
+                                <button class="btn btn-outline" @click="closeRuleForm">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">规则名称</label>
+                                    <input type="text" class="form-control" v-model="currentRule.name" placeholder="例如: 屏蔽广告规则">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">规则类型</label>
+                                    <select class="form-control" v-model="currentRule.type">
+                                        <option value="domain">域名规则</option>
+                                        <option value="ip">IP规则</option>
+                                        <option value="geoip">GeoIP规则</option>
+                                        <option value="geosite">GeoSite规则</option>
+                                        <option value="port">端口规则</option>
+                                        <option value="protocol">协议规则</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">条件</label>
+                                    <input type="text" class="form-control" v-model="currentRule.condition" placeholder="例如: *.ad.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">策略</label>
+                                    <select class="form-control" v-model="currentRule.action">
+                                        <option value="direct">直连</option>
+                                        <option value="proxy">代理</option>
+                                        <option value="block">阻止</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button class="btn btn-outline" @click="closeRuleForm">取消</button>
+                                <button class="btn btn-primary" @click="saveRule">{{ editingRule ? '更新规则' : '保存规则' }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统设置页面 -->
+                <div class="content-section" :class="{ active: activeTab === 'settings' }" id="settings">
+                    <div class="settings-container">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">启动时自动运行</div>
+                                <div class="setting-desc">SingBox UI 将在系统启动时自动运行</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.autoStart">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">自动更新节点列表</div>
+                                <div class="setting-desc">每24小时自动更新代理节点列表</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.autoUpdate">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">内核管理</div>
+                                <div class="setting-desc">设置SingBox内核路径或下载最新版本</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="file-input">
+                                    <input type="text" v-model="settings.kernelPath" readonly>
+                                    <button class="btn btn-outline" @click="browseKernel">浏览</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">下载SingBox内核</div>
+                                <div class="setting-desc">下载最新版本的SingBox内核到子目录</div>
+                            </div>
+                            <div class="setting-control">
+                                <button class="btn" @click="downloadKernel">
+                                    <i class="fas fa-download"></i> 下载内核
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="download-progress" v-if="downloading">
+                            <div>下载进度: <span>{{ downloadProgress }}%</span></div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: downloadProgress + '%' }"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">日志级别</div>
+                                <div class="setting-desc">设置SingBox日志输出级别</div>
+                            </div>
+                            <div class="setting-control">
+                                <select class="mode-select" v-model="settings.logLevel">
+                                    <option>调试</option>
+                                    <option>信息</option>
+                                    <option>警告</option>
+                                    <option>错误</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">IPv6支持</div>
+                                <div class="setting-desc">启用IPv6网络支持</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.ipv6Enabled">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">TUN模式</div>
+                                <div class="setting-desc">启用TUN网络模式</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.tunEnabled">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">DNS设置</div>
+                                <div class="setting-desc">自定义DNS服务器地址</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="text" class="form-control" v-model="settings.dnsServers" placeholder="例如: 8.8.8.8, 1.1.1.1">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">分流设置</div>
+                                <div class="setting-desc">启用流量分流功能</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.splitTunneling">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">MUX多路复用</div>
+                                <div class="setting-desc">启用连接多路复用功能</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.muxEnabled">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">TLS设置</div>
+                                <div class="setting-desc">启用TLS加密连接</div>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="settings.tlsEnabled">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="config-manager">
+                            <h3>配置文件管理</h3>
+                            <div class="config-actions">
+                                <button class="btn btn-primary" @click="importLocalConfig">
+                                    <i class="fas fa-file-import"></i> 本地导入
+                                </button>
+                                <button class="btn btn-outline" @click="importUrlConfig">
+                                    <i class="fas fa-link"></i> URL导入
+                                </button>
+                                <button class="btn btn-outline" @click="exportConfig">
+                                    <i class="fas fa-file-export"></i> 导出配置
+                                </button>
+                            </div>
+                            
+                            <div class="config-list">
+                                <div v-for="(config, index) in configs" :key="index" 
+                                     class="config-item" :class="{ active: config.active }">
+                                    <div>{{ config.name }}</div>
+                                    <div>
+                                        <button class="btn btn-outline" @click="applyConfig(index)">
+                                            <i class="fas fa-check"></i> 应用
+                                        </button>
+                                        <button class="btn btn-outline" @click="removeConfig(index)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="setting-title">重置设置</div>
+                                <div class="setting-desc">恢复所有设置为默认值</div>
+                            </div>
+                            <div class="setting-control">
+                                <button class="btn btn-outline" @click="resetSettings">
+                                    <i class="fas fa-redo"></i> 重置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+        
+        createApp({
+            setup() {
+                // 主题管理
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                const currentTheme = ref(savedTheme);
+                document.documentElement.setAttribute('data-theme', currentTheme.value);
+                
+                const themeText = computed(() => currentTheme.value === 'light' ? '亮色模式' : '暗色模式');
+                const themeIcon = computed(() => currentTheme.value === 'light' ? 'fa-sun theme-icon' : 'fa-moon theme-icon');
+                
+                const toggleTheme = () => {
+                    const newTheme = currentTheme.value === 'dark' ? 'light' : 'dark';
+                    currentTheme.value = newTheme;
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                };
+                
+                // 导航管理
+                const activeTab = ref('dashboard');
+                const getTabTitle = (tab) => {
+                    const titles = {
+                        'dashboard': '仪表盘',
+                        'proxies': '代理节点',
+                        'rules': '规则管理',
+                        'connections': '连接管理',
+                        'settings': '系统设置'
+                    };
+                    return titles[tab];
+                };
+                
+                const getSearchPlaceholder = (tab) => {
+                    const placeholders = {
+                        'dashboard': '搜索节点或配置...',
+                        'proxies': '搜索代理节点...',
+                        'rules': '搜索规则...',
+                        'connections': '搜索连接...',
+                        'settings': '搜索设置...'
+                    };
+                    return placeholders[tab];
+                };
+                
+                // 连接管理
+                const isConnected = ref(true);
+                const currentMode = ref('rule');
+                const modeText = computed(() => {
+                    const texts = {
+                        'global': '全局模式',
+                        'rule': '规则模式',
+                        'direct': '直连模式'
+                    };
+                    return texts[currentMode.value];
+                });
+                
+                const toggleConnection = () => {
+                    isConnected.value = !isConnected.value;
+                };
+                
+                // 仪表盘数据
+                const stats = reactive({
+                    download: 24.8,
+                    upload: 8.2,
+                    bandwidth: 86.4
+                });
+                
+                const downloadTrend = ref(12);
+                const uploadTrend = ref(8);
+                const uptime = ref("36:24:18");
+                
+                // 图表引用
+                const trafficChart = ref(null);
+                const bandwidthChart = ref(null);
+                let trafficChartInstance = null;
+                let bandwidthChartInstance = null;
+                
+                // 规则管理
+                const rules = ref([
+                    { id: 1, name: "广告拦截", type: "domain", condition: "geosite:category-ads-all", action: "block" },
+                    { id: 2, name: "中国大陆直连", type: "geoip", condition: "geoip:cn", action: "direct" },
+                    { id: 3, name: "私有网络直连", type: "ip", condition: "192.168.0.0/16, 10.0.0.0/8", action: "direct" },
+                    { id: 4, name: "Google代理", type: "domain", condition: "google.com, *.google.com", action: "proxy" },
+                    { id: 5, name: "Netflix代理", type: "domain", condition: "netflix.com, *.netflix.com", action: "proxy" },
+                    { id: 6, name: "屏蔽恶意网站", type: "domain", condition: "geosite:category-malware", action: "block" }
+                ]);
+                
+                const showForm = ref(false);
+                const editingRule = ref(null);
+                const currentRule = reactive({
+                    name: '',
+                    type: 'domain',
+                    condition: '',
+                    action: 'direct'
+                });
+                
+                const showRuleForm = () => {
+                    showForm.value = true;
+                    editingRule.value = null;
+                    Object.assign(currentRule, {
+                        name: '',
+                        type: 'domain',
+                        condition: '',
+                        action: 'direct'
+                    });
+                };
+                
+                const editRule = (rule) => {
+                    showForm.value = true;
+                    editingRule.value = rule;
+                    Object.assign(currentRule, {...rule});
+                };
+                
+                const closeRuleForm = () => {
+                    showForm.value = false;
+                    editingRule.value = null;
+                };
+                
+                const saveRule = () => {
+                    if (!currentRule.name || !currentRule.condition) {
+                        alert('请填写规则名称和条件');
+                        return;
+                    }
+                    
+                    if (editingRule.value) {
+                        // 更新现有规则
+                        Object.assign(editingRule.value, {...currentRule});
+                    } else {
+                        // 添加新规则
+                        rules.value.push({
+                            id: rules.value.length + 1,
+                            ...currentRule
+                        });
+                    }
+                    
+                    closeRuleForm();
+                };
+                
+                const deleteRule = (index) => {
+                    if (confirm('确定要删除此规则吗？')) {
+                        rules.value.splice(index, 1);
+                    }
+                };
+                
+                const getActionClass = (action) => {
+                    return {
+                        'action-direct': action === 'direct',
+                        'action-proxy': action === 'proxy',
+                        'action-block': action === 'block'
+                    };
+                };
+                
+                const getActionText = (action) => {
+                    const texts = {
+                        'direct': '直连',
+                        'proxy': '代理',
+                        'block': '阻止'
+                    };
+                    return texts[action];
+                };
+                
+                // 系统设置
+                const settings = reactive({
+                    autoStart: true,
+                    autoUpdate: true,
+                    kernelPath: './sing-box/sing-box.exe',
+                    logLevel: '警告',
+                    ipv6Enabled: false,
+                    tunEnabled: true,
+                    dnsServers: '8.8.8.8, 1.1.1.1',
+                    splitTunneling: true,
+                    muxEnabled: true,
+                    tlsEnabled: true
+                });
+                
+                const downloading = ref(false);
+                const downloadProgress = ref(0);
+                const downloadTimer = ref(null);
+                
+                const downloadKernel = () => {
+                    downloading.value = true;
+                    downloadProgress.value = 0;
+                    
+                    downloadTimer.value = setInterval(() => {
+                        downloadProgress.value += Math.floor(Math.random() * 5);
+                        if (downloadProgress.value >= 100) {
+                            clearInterval(downloadTimer.value);
+                            setTimeout(() => {
+                                downloading.value = false;
+                                alert('SingBox内核下载完成！已保存到sing-box子目录');
+                            }, 500);
+                        }
+                    }, 200);
+                };
+                
+                const browseKernel = () => {
+                    alert('在实际应用中，这里会打开文件选择对话框');
+                };
+                
+                const resetSettings = () => {
+                    if (confirm('确定要重置所有设置为默认值吗？')) {
+                        Object.assign(settings, {
+                            autoStart: true,
+                            autoUpdate: true,
+                            kernelPath: './sing-box/sing-box.exe',
+                            logLevel: '警告',
+                            ipv6Enabled: false,
+                            tunEnabled: true,
+                            dnsServers: '8.8.8.8, 1.1.1.1',
+                            splitTunneling: true,
+                            muxEnabled: true,
+                            tlsEnabled: true
+                        });
+                    }
+                };
+                
+                // 配置管理
+                const configs = ref([
+                    { name: '默认配置', active: true },
+                    { name: '工作配置', active: false },
+                    { name: '游戏配置', active: false }
+                ]);
+                
+                const importLocalConfig = () => {
+                    alert('在实际应用中，这里会打开文件选择对话框导入本地配置');
+                };
+                
+                const importUrlConfig = () => {
+                    const url = prompt('请输入配置文件的URL:');
+                    if (url) {
+                        configs.value.push({ 
+                            name: `URL配置-${configs.value.length + 1}`, 
+                            active: false 
+                        });
+                    }
+                };
+                
+                const exportConfig = () => {
+                    alert('配置已导出');
+                };
+                
+                const applyConfig = (index) => {
+                    configs.value.forEach((config, i) => {
+                        config.active = i === index;
+                    });
+                    alert(`已应用配置: ${configs.value[index].name}`);
+                };
+                
+                const removeConfig = (index) => {
+                    if (confirm('确定要删除此配置吗？')) {
+                        configs.value.splice(index, 1);
+                    }
+                };
+                
+                // 图表初始化
+                const initTrafficChart = () => {
+                    const ctx = trafficChart.value.getContext('2d');
+                    trafficChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月'],
+                            datasets: [
+                                {
+                                    label: '下载流量',
+                                    data: [18, 25, 22, 30, 27, 38, 45],
+                                    borderColor: '#8a4cd0',
+                                    backgroundColor: 'rgba(138, 76, 208, 0.1)',
+                                    borderWidth: 3,
+                                    tension: 0.3,
+                                    fill: true
+                                },
+                                {
+                                    label: '上传流量',
+                                    data: [5, 8, 10, 12, 15, 18, 22],
+                                    borderColor: '#a855f7',
+                                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                    borderWidth: 3,
+                                    tension: 0.3,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: 'var(--text-primary)',
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: 'rgba(148, 163, 184, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: 'var(--text-secondary)'
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        color: 'rgba(148, 163, 184, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: 'var(--text-secondary)',
+                                        callback: function(value) {
+                                            return value + ' GB';
+                                        }
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            }
+                        }
+                    });
+                };
+                
+                const initBandwidthChart = () => {
+                    const ctx = bandwidthChart.value.getContext('2d');
+                    bandwidthChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 30}, (_, i) => (i + 1) + '秒'),
+                            datasets: [
+                                {
+                                    label: '下载速度',
+                                    data: Array.from({length: 30}, () => Math.floor(Math.random() * 100) + 30),
+                                    borderColor: '#8a4cd0',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    tension: 0.4,
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: '上传速度',
+                                    data: Array.from({length: 30}, () => Math.floor(Math.random() * 30) + 5),
+                                    borderColor: '#a855f7',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    tension: 0.4,
+                                    pointRadius: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: 'var(--text-primary)',
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: false,
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        color: 'rgba(148, 163, 184, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: 'var(--text-secondary)',
+                                        callback: function(value) {
+                                            return value + ' Mbps';
+                                        }
+                                    }
+                                }
+                            },
+                            animation: false
+                        }
+                    });
+                };
+                
+                const updateBandwidthChart = () => {
+                    if (!bandwidthChartInstance) return;
+                    
+                    const downloadData = bandwidthChartInstance.data.datasets[0].data;
+                    const uploadData = bandwidthChartInstance.data.datasets[1].data;
+                    
+                    // 移除第一个数据点
+                    downloadData.shift();
+                    uploadData.shift();
+                    
+                    // 添加新的随机数据点
+                    downloadData.push(Math.floor(Math.random() * 40) + 50);
+                    uploadData.push(Math.floor(Math.random() * 20) + 10);
+                    
+                    bandwidthChartInstance.update();
+                };
+                
+                const resetBandwidthChart = () => {
+                    if (bandwidthChartInstance) {
+                        bandwidthChartInstance.data.datasets[0].data = Array.from({length: 30}, () => Math.floor(Math.random() * 100) + 30);
+                        bandwidthChartInstance.data.datasets[1].data = Array.from({length: 30}, () => Math.floor(Math.random() * 30) + 5);
+                        bandwidthChartInstance.update();
+                    }
+                };
+                
+                // 生命周期钩子
+                onMounted(() => {
+                    initTrafficChart();
+                    initBandwidthChart();
+                    
+                    // 模拟实时数据更新
+                    setInterval(updateBandwidthChart, 1000);
+                    
+                    // 模拟流量数据更新
+                    setInterval(() => {
+                        stats.download += 0.1;
+                        stats.upload += 0.02;
+                        stats.bandwidth = Math.floor(Math.random() * 100) + 30;
+                    }, 5000);
+                });
+                
+                return {
+                    currentTheme,
+                    themeText,
+                    themeIcon,
+                    toggleTheme,
+                    activeTab,
+                    getTabTitle,
+                    getSearchPlaceholder,
+                    isConnected,
+                    currentMode,
+                    modeText,
+                    toggleConnection,
+                    stats,
+                    downloadTrend,
+                    uploadTrend,
+                    uptime,
+                    trafficChart,
+                    bandwidthChart,
+                    resetBandwidthChart,
+                    rules,
+                    showForm,
+                    editingRule,
+                    currentRule,
+                    showRuleForm,
+                    editRule,
+                    closeRuleForm,
+                    saveRule,
+                    deleteRule,
+                    getActionClass,
+                    getActionText,
+                    settings,
+                    downloading,
+                    downloadProgress,
+                    downloadKernel,
+                    browseKernel,
+                    resetSettings,
+                    configs,
+                    importLocalConfig,
+                    importUrlConfig,
+                    exportConfig,
+                    applyConfig,
+                    removeConfig
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
 </html>
